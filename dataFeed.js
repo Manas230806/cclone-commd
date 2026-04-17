@@ -4,10 +4,11 @@ const axios = require("axios");
 let cache = {
   KLC: {},
   CBOT: {},
+  CRUDE: {},   // ✅ NEW
   lastUpdated: null
 };
 
-// 🔥 Generic TradingView fetch
+// 🔥 TradingView fetch
 async function fetchSymbol(symbol) {
   try {
     const url = "https://scanner.tradingview.com/global/scan";
@@ -38,7 +39,7 @@ async function fetchSymbol(symbol) {
   }
 }
 
-// 🔥 Safe fetch with fallback
+// 🔥 Safe fetch
 async function safeFetch(symbol, fallback) {
   let data = await fetchSymbol(symbol);
 
@@ -56,6 +57,7 @@ async function refreshData() {
 
   const fallbackKLC = "MYX:FCPO1!";
   const fallbackCBOT = "CBOT:ZL1!";
+  const fallbackCRUDE = "NYMEX:CL1!"; // ✅ NEW
 
   cache = {
     KLC: {
@@ -71,6 +73,14 @@ async function refreshData() {
       JULY: await safeFetch("CBOT:ZLN2026", fallbackCBOT),
       AUG: await safeFetch("CBOT:ZLQ2026", fallbackCBOT),
       SEP: await safeFetch("CBOT:ZLU2026", fallbackCBOT)
+    },
+
+    // 🔥 NEW CRUDE SECTION
+    CRUDE: {
+      MAY: await safeFetch("NYMEX:CLK2026", fallbackCRUDE),
+      JULY: await safeFetch("NYMEX:CLN2026", fallbackCRUDE),
+      AUG: await safeFetch("NYMEX:CLQ2026", fallbackCRUDE),
+      SEP: await safeFetch("NYMEX:CLU2026", fallbackCRUDE)
     },
 
     lastUpdated: new Date()
