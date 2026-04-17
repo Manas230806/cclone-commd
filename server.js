@@ -6,47 +6,29 @@ const { startAutoRefresh, getData } = require("./dataFeed");
 
 const app = express();
 
-/* MIDDLEWARE */
+// Middleware
 app.use(cors());
 app.use(express.json());
 
-/* SERVE FRONTEND */
+// 🔥 Serve frontend
 app.use(express.static(path.join(__dirname)));
 
-/* START DATA ENGINE */
+// Start background data
 startAutoRefresh();
 
-/* ROOT → OPEN FRONTEND */
+// Home route → open UI directly
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "index.html"));
 });
 
-/* MAIN API */
+// API route
 app.get("/api/prices", (req, res) => {
-  try {
-    const data = getData();
-
-    if (!data || !data.KLC || !data.CBOT) {
-      return res.json({
-        KLC: {},
-        CBOT: {},
-        CRUDE: {},
-        USDINR: 0,
-        lastUpdated: null
-      });
-    }
-
-    res.json(data);
-
-  } catch (err) {
-    console.log("❌ API error:", err);
-    res.status(500).json({ error: "Server error" });
-  }
+  res.json(getData());
 });
 
-/* PORT CONFIG (IMPORTANT FOR RENDER) */
-const PORT = process.env.PORT || 3000;
+// Start server
+const PORT = 3000;
 
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`🚀 Server running at http://localhost:${PORT}`);
 });
