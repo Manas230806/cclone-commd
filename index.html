@@ -85,7 +85,7 @@
 
 <header>
   <h2>📊 Live Oil Market Dashboard</h2>
-  <div id="clock", style="color: #ffffff; font-weight: bold;"></div>
+  <div id="clock" style="color: #ffffff; font-weight: bold;"></div>
 </header>
 
 <div class="container">
@@ -98,6 +98,13 @@
     <h3>CBOT Market</h3>
     <table id="cbotTable"></table>
   </div>
+
+  <!-- ✅ NEW CRUDE TABLE -->
+  <div class="card">
+    <h3>CRUDE Market</h3>
+    <table id="crudeTable"></table>
+  </div>
+
 </div>
 
 <script>
@@ -116,7 +123,8 @@ updateClock();
 /* STORE PREVIOUS PRICES */
 let previousData = {
   KLC: {},
-  CBOT: {}
+  CBOT: {},
+  CRUDE: {}   // ✅ ADDED
 };
 
 /* LOAD DATA */
@@ -126,6 +134,7 @@ async function loadData() {
 
   renderTable("klcTable", data.KLC, "KLC");
   renderTable("cbotTable", data.CBOT, "SOYOIL");
+  renderTable("crudeTable", data.CRUDE, "CRUDE"); // ✅ ADDED
 
   previousData = data;
 }
@@ -140,10 +149,14 @@ function renderTable(id, dataset, prefix) {
     </tr>
   `;
 
-  Object.keys(dataset).forEach(month => {
+  Object.keys(dataset || {}).forEach(month => {
     const item = dataset[month];
 
-    const prev = previousData?.[id === "klcTable" ? "KLC" : "CBOT"]?.[month]?.price;
+    const prev = previousData?.[
+      id === "klcTable" ? "KLC" :
+      id === "cbotTable" ? "CBOT" :
+      "CRUDE"
+    ]?.[month]?.price;
 
     const current = parseFloat(item.price);
     const previous = parseFloat(prev);
