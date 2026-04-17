@@ -1,87 +1,77 @@
 const axios = require("axios");
+const cheerio = require("cheerio");
 
-// Cache
+// CACHE
 let cache = {
   KLC: {},
   CBOT: {},
-  CRUDE: {},   // ✅ NEW
+  CRUDE: {},
+  USDINR: 83,
   lastUpdated: null
 };
 
-// 🔥 TradingView fetch
-async function fetchSymbol(symbol) {
+// 🔥 GENERIC SCRAPER
+async function scrapeInvesting(url) {
   try {
-    const url = "https://scanner.tradingview.com/global/scan";
-
-    const response = await axios.post(url, {
-      symbols: {
-        tickers: [symbol],
-        query: { types: [] }
-      },
-      columns: ["close", "change"]
+    const { data } = await axios.get(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0"
+      }
     });
 
-    if (!response.data.data || response.data.data.length === 0) {
-      console.log("⚠️ No data:", symbol);
-      return null;
-    }
+    const $ = cheerio.load(data);
 
-    const d = response.data.data[0].d;
+    const price = $('[data-test="instrument-price-last"]').text().trim();
+    const change = $('[data-test="instrument-price-change"]').text().trim();
+
+    if (!price) throw "No price";
 
     return {
-      price: d[0]?.toFixed(2),
-      change: d[1]?.toFixed(2)
+      price,
+      change
     };
 
   } catch (err) {
-    console.log("❌ Error:", symbol);
-    return null;
+    console.log("❌ Scrape failed:", url);
+    return { price: "-", change: "-" };
   }
 }
 
-// 🔥 Safe fetch
-async function safeFetch(symbol, fallback) {
-  let data = await fetchSymbol(symbol);
-
-  if (!data) {
-    console.log("↩️ Fallback used for:", symbol);
-    data = await fetchSymbol(fallback);
+// 🔥 USD → INR
+async function getUSDINR() {
+  try {
+    const res = await axios.get("https://api.exchangerate-api.com/v4/latest/USD");
+    return res.data.rates.INR;
+  } catch {
+    return cache.USDINR;
   }
-
-  return data || { price: "-", change: "-" };
 }
 
-// 🔥 MAIN FUNCTION
+// 🔥 MAIN REFRESH
 async function refreshData() {
-  console.log("🔄 Fetching SMART contract data...");
-
-  const fallbackKLC = "MYX:FCPO1!";
-  const fallbackCBOT = "CBOT:ZL1!";
-  const fallbackCRUDE = "NYMEX:CL1!"; // ✅ NEW
+  console.log("🔄 Fetching Investing data...");
 
   cache = {
     KLC: {
-      MAY: await safeFetch("MYX:FCPOK2026", fallbackKLC),
-      JUN: await safeFetch("MYX:FCPOM2026", fallbackKLC),
-      JULY: await safeFetch("MYX:FCPON2026", fallbackKLC),
-      AUG: await safeFetch("MYX:FCPOQ2026", fallbackKLC),
-      SEP: await safeFetch("MYX:FCPOU2026", fallbackKLC)
+      MAY: await scrapeInvesting("https://www.investing.com/commodities/palm-oil"),
+      JUN: await scrapeInvesting("https://www.investing.com/commodities/palm-oil"),
+      JULY: await scrapeInvesting("https://www.investing.com/commodities/palm-oil"),
+      AUG: await scrapeInvesting("https://www.investing.com/commodities/palm-oil"),
+      SEP: await scrapeInvesting("https://www.investing.com/commodities/palm-oil")
     },
 
     CBOT: {
-      MAY: await safeFetch("CBOT:ZLK2026", fallbackCBOT),
-      JULY: await safeFetch("CBOT:ZLN2026", fallbackCBOT),
-      AUG: await safeFetch("CBOT:ZLQ2026", fallbackCBOT),
-      SEP: await safeFetch("CBOT:ZLU2026", fallbackCBOT)
+      MAY: await scrapeInvesting("https://www.investing.com/commodities/us-soybean-oil"),
+      JULY: await scrapeInvesting("https://www.investing.com/commodities/us-soybean-oil"),
+      AUG: await scrapeInvesting("https://www.investing.com/commodities/us-soybean-oil"),
+      SEP: await scrapeInvesting("https://www.investing.com/commodities/us-soybean-oil")
     },
 
-    // 🔥 NEW CRUDE SECTION
     CRUDE: {
-      MAY: await safeFetch("NYMEX:CLK2026", fallbackCRUDE),
-      JULY: await safeFetch("NYMEX:CLN2026", fallbackCRUDE),
-      AUG: await safeFetch("NYMEX:CLQ2026", fallbackCRUDE),
-      SEP: await safeFetch("NYMEX:CLU2026", fallbackCRUDE)
+      LIVE: await scrapeInvesting("https://www.investing.com/commodities/crude-oil")
     },
+
+    USDINR: await getUSDINR(),
 
     lastUpdated: new Date()
   };
@@ -89,13 +79,13 @@ async function refreshData() {
   console.log("✅ Updated:", cache);
 }
 
-// Auto refresh
+// AUTO REFRESH
 function startAutoRefresh() {
   refreshData();
-  setInterval(refreshData, 5000);
+  setInterval(refreshData, 15000); // 15 sec (safe)
 }
 
-// Export
+// EXPORT
 function getData() {
   return cache;
 }
