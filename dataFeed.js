@@ -1,81 +1,91 @@
 const axios = require("axios");
 
-// CACHE
+// Cache
 let cache = {
   KLC: {},
   CBOT: {},
-  CRUDE: {},
-  USDINR: 83,
   lastUpdated: null
 };
 
-// 🔥 REAL API (FREE)
-async function fetchPrice(url) {
+// 🔥 Generic TradingView fetch
+async function fetchSymbol(symbol) {
   try {
-    const res = await axios.get(url);
-    return res.data;
-  } catch {
+    const url = "https://scanner.tradingview.com/global/scan";
+
+    const response = await axios.post(url, {
+      symbols: {
+        tickers: [symbol],
+        query: { types: [] }
+      },
+      columns: ["close", "change"]
+    });
+
+    if (!response.data.data || response.data.data.length === 0) {
+      console.log("⚠️ No data:", symbol);
+      return null;
+    }
+
+    const d = response.data.data[0].d;
+
+    return {
+      price: d[0]?.toFixed(2),
+      change: d[1]?.toFixed(2)
+    };
+
+  } catch (err) {
+    console.log("❌ Error:", symbol);
     return null;
   }
 }
 
+// 🔥 Safe fetch with fallback
+async function safeFetch(symbol, fallback) {
+  let data = await fetchSymbol(symbol);
+
+  if (!data) {
+    console.log("↩️ Fallback used for:", symbol);
+    data = await fetchSymbol(fallback);
+  }
+
+  return data || { price: "-", change: "-" };
+}
+
 // 🔥 MAIN FUNCTION
 async function refreshData() {
-  console.log("🔄 Fetching REAL API data...");
+  console.log("🔄 Fetching SMART contract data...");
 
-  try {
-    // ✅ CRUDE (WORKS)
-    const crude = await fetchPrice(
-      "https://api.coingecko.com/api/v3/simple/price?ids=oil-brent&vs_currencies=usd"
-    );
+  const fallbackKLC = "MYX:FCPO1!";
+  const fallbackCBOT = "CBOT:ZL1!";
 
-    // ✅ USD INR
-    const usd = await fetchPrice(
-      "https://api.exchangerate-api.com/v4/latest/USD"
-    );
+  cache = {
+    KLC: {
+      MAY: await safeFetch("MYX:FCPOK2026", fallbackKLC),
+      JUN: await safeFetch("MYX:FCPOM2026", fallbackKLC),
+      JULY: await safeFetch("MYX:FCPON2026", fallbackKLC),
+      AUG: await safeFetch("MYX:FCPOQ2026", fallbackKLC),
+      SEP: await safeFetch("MYX:FCPOU2026", fallbackKLC)
+    },
 
-    cache = {
-      KLC: {
-        MAY: { price: "4500", change: "+10" },
-        JUN: { price: "4520", change: "+5" },
-        JULY: { price: "4480", change: "-8" },
-        AUG: { price: "4470", change: "-3" },
-        SEP: { price: "4450", change: "-6" }
-      },
+    CBOT: {
+      MAY: await safeFetch("CBOT:ZLK2026", fallbackCBOT),
+      JULY: await safeFetch("CBOT:ZLN2026", fallbackCBOT),
+      AUG: await safeFetch("CBOT:ZLQ2026", fallbackCBOT),
+      SEP: await safeFetch("CBOT:ZLU2026", fallbackCBOT)
+    },
 
-      CBOT: {
-        MAY: { price: "66.4", change: "-0.2" },
-        JULY: { price: "66.5", change: "+0.1" },
-        AUG: { price: "65.3", change: "-0.3" },
-        SEP: { price: "65.1", change: "-0.2" }
-      },
+    lastUpdated: new Date()
+  };
 
-      CRUDE: {
-        LIVE: {
-          price: crude?.oil_brent?.usd?.toString() || "78",
-          change: "-"
-        }
-      },
-
-      USDINR: usd?.rates?.INR || 83,
-
-      lastUpdated: new Date()
-    };
-
-    console.log("✅ Data Updated");
-
-  } catch (err) {
-    console.log("❌ API failed");
-  }
+  console.log("✅ Updated:", cache);
 }
 
-// AUTO REFRESH
+// Auto refresh
 function startAutoRefresh() {
   refreshData();
-  setInterval(refreshData, 10000);
+  setInterval(refreshData, 5000);
 }
 
-// EXPORT
+// Export
 function getData() {
   return cache;
 }
