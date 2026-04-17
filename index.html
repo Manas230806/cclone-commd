@@ -2,106 +2,154 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Market Dashboard</title>
 
 <style>
-  body {
-    margin: 0;
-    font-family: Arial;
-    background: #adb3be;
-    color: rgb(255, 255, 255);
-  }
 
-  header {
-    display: flex;
-    justify-content: space-between;
-    padding: 15px 25px;
-    background: #111827;
-    position: sticky;
-    top: 0;
-    border-bottom: 1px solid #1f2937;
-  }
+/* 🌌 BACKGROUND */
+body {
+  margin: 0;
+  font-family: 'Segoe UI', sans-serif;
+  background: linear-gradient(135deg, #0f172a, #1e293b);
+  color: white;
+}
 
+/* 🔄 LOADING SCREEN */
+#loader {
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  background: #0f172a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.loader-circle {
+  width: 60px;
+  height: 60px;
+  border: 6px solid #334155;
+  border-top: 6px solid #38bdf8;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  100% { transform: rotate(360deg); }
+}
+
+/* HEADER */
+header {
+  display: flex;
+  justify-content: space-between;
+  padding: 15px 20px;
+  background: rgba(17, 24, 39, 0.8);
+  backdrop-filter: blur(10px);
+  position: sticky;
+  top: 0;
+}
+
+/* GRID */
+.container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+  padding: 15px;
+}
+
+/* 📱 MOBILE */
+@media (max-width: 768px) {
   .container {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-    padding: 20px;
+    grid-template-columns: 1fr;
   }
+}
 
-  .card {
-    background: #2c3851;
-    padding: 15px;
-    border-radius: 12px;
-    border: 1px solid #1f2937;
-  }
+/* CARD */
+.card {
+  background: rgba(255,255,255,0.05);
+  border-radius: 15px;
+  padding: 15px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+  backdrop-filter: blur(10px);
+  transition: 0.3s;
+}
 
-  table {
-    width: 100%;
-    border-collapse: collapse;
-  }
+.card:hover {
+  transform: translateY(-5px);
+}
 
-  th, td {
-    padding: 10px;
-    text-align: center;
-    border-bottom: 1px solid #1f2937;
-  }
+/* TABLE */
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
 
-  th {
-    color: #60a5fa;
-  }
+th, td {
+  padding: 10px;
+  text-align: center;
+}
 
-  .positive-flash {
-    animation: greenFlash 0.8s ease;
-  }
+th {
+  color: #38bdf8;
+}
 
-  .negative-flash {
-    animation: redFlash 0.8s ease;
-  }
+tr {
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
 
-  @keyframes greenFlash {
-    0% { background: rgb(0, 255, 94); }
-    100% { background: transparent; }
-  }
+/* FLASH */
+.positive-flash {
+  animation: greenFlash 0.7s;
+}
+.negative-flash {
+  animation: redFlash 0.7s;
+}
 
-  @keyframes redFlash {
-    0% { background: rgb(255, 0, 0); }
-    100% { background: transparent; }
-  }
+@keyframes greenFlash {
+  0% { background: rgba(0,255,100,0.4); }
+  100% { background: transparent; }
+}
 
-  .positive {
-    color: #00ff11;
-    font-weight: bold;
-  }
+@keyframes redFlash {
+  0% { background: rgba(255,0,0,0.4); }
+  100% { background: transparent; }
+}
 
-  .negative {
-    color: #ff0404;
-    font-weight: bold;
-  }
+/* COLORS */
+.positive { color: #22c55e; font-weight: bold; }
+.negative { color: #ef4444; font-weight: bold; }
+
 </style>
 </head>
 
 <body>
 
+<!-- 🔄 LOADER -->
+<div id="loader">
+  <div class="loader-circle"></div>
+</div>
+
 <header>
-  <h2>📊 Live Oil Market Dashboard</h2>
-  <div id="clock" style="color: #ffffff; font-weight: bold;"></div>
+  <h2>📊 Oil Market</h2>
+  <div id="clock"></div>
 </header>
 
 <div class="container">
+
   <div class="card">
-    <h3>KLC Market</h3>
+    <h3>KLC</h3>
     <table id="klcTable"></table>
   </div>
 
   <div class="card">
-    <h3>CBOT Market</h3>
+    <h3>CBOT</h3>
     <table id="cbotTable"></table>
   </div>
 
-  <!-- ✅ NEW CRUDE TABLE -->
   <div class="card">
-    <h3>CRUDE Market</h3>
+    <h3>CRUDE</h3>
     <table id="crudeTable"></table>
   </div>
 
@@ -115,31 +163,38 @@ const API = "https://cclone-commd.onrender.com/api/prices";
 function updateClock() {
   const now = new Date();
   document.getElementById("clock").innerText =
-    now.toLocaleDateString() + " " + now.toLocaleTimeString();
+    now.toLocaleTimeString();
 }
 setInterval(updateClock, 1000);
-updateClock();
 
-/* STORE PREVIOUS PRICES */
+/* STORE PREVIOUS */
 let previousData = {
   KLC: {},
   CBOT: {},
-  CRUDE: {}   // ✅ ADDED
+  CRUDE: {}
 };
 
 /* LOAD DATA */
 async function loadData() {
-  const res = await fetch(API);
-  const data = await res.json();
+  try {
+    const res = await fetch(API);
+    const data = await res.json();
 
-  renderTable("klcTable", data.KLC, "KLC");
-  renderTable("cbotTable", data.CBOT, "SOYOIL");
-  renderTable("crudeTable", data.CRUDE, "CRUDE"); // ✅ ADDED
+    renderTable("klcTable", data.KLC, "KLC");
+    renderTable("cbotTable", data.CBOT, "SOYOIL");
+    renderTable("crudeTable", data.CRUDE, "CRUDE");
 
-  previousData = data;
+    previousData = data;
+
+    // ✅ Hide loader after first load
+    document.getElementById("loader").style.display = "none";
+
+  } catch (e) {
+    console.log("Error loading data");
+  }
 }
 
-/* RENDER TABLE WITH FLASH */
+/* TABLE RENDER */
 function renderTable(id, dataset, prefix) {
   let html = `
     <tr>
@@ -154,8 +209,7 @@ function renderTable(id, dataset, prefix) {
 
     const prev = previousData?.[
       id === "klcTable" ? "KLC" :
-      id === "cbotTable" ? "CBOT" :
-      "CRUDE"
+      id === "cbotTable" ? "CBOT" : "CRUDE"
     ]?.[month]?.price;
 
     const current = parseFloat(item.price);
