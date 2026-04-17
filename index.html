@@ -129,18 +129,45 @@ let previousData = {
 
 /* LOAD DATA */
 async function loadData() {
-  const res = await fetch(API);
-  const data = await res.json();
+  try {
+    const res = await fetch(API);
 
-  renderTable("klcTable", data.KLC, "KLC");
-  renderTable("cbotTable", data.CBOT, "SOYOIL");
-  renderTable("crudeTable", data.CRUDE, "CRUDE"); // ✅ ADDED
+    if (!res.ok) {
+      throw new Error("API not responding");
+    }
 
-  previousData = data;
+    const data = await res.json();
+
+    console.log("LIVE DATA:", data);
+
+    renderTable("klcTable", data.KLC, "KLC");
+    renderTable("cbotTable", data.CBOT, "SOYOIL");
+    renderTable("crudeTable", data.CRUDE, "CRUDE");
+
+    previousData = data;
+
+  } catch (err) {
+    console.error(err);
+
+    document.getElementById("klcTable").innerHTML =
+      "<tr><td colspan='3'>❌ API Error</td></tr>";
+  }
 }
 
 /* RENDER TABLE WITH FLASH */
 function renderTable(id, dataset, prefix) {
+  const table = document.getElementById(id);
+
+  // 🔥 SHOW MESSAGE IF NO DATA
+  if (!dataset || Object.keys(dataset).length === 0) {
+    table.innerHTML = `
+      <tr>
+        <td colspan="3">⚠️ No Data Coming From Server</td>
+      </tr>
+    `;
+    return;
+  }
+
   let html = `
     <tr>
       <th>Month</th>
@@ -149,37 +176,28 @@ function renderTable(id, dataset, prefix) {
     </tr>
   `;
 
-  Object.keys(dataset || {}).forEach(month => {
-    const item = dataset[month];
+  Object.entries(dataset).forEach(([month, item]) => {
 
-    const prev = previousData?.[
-      id === "klcTable" ? "KLC" :
-      id === "cbotTable" ? "CBOT" :
-      "CRUDE"
-    ]?.[month]?.price;
+    const price = item?.price || "-";
+    const change = item?.change || "-";
 
-    const current = parseFloat(item.price);
-    const previous = parseFloat(prev);
-
-    let flashClass = "";
-
-    if (!isNaN(previous)) {
-      if (current > previous) flashClass = "positive-flash";
-      else if (current < previous) flashClass = "negative-flash";
-    }
-
-    const changeClass = parseFloat(item.change) >= 0 ? "positive" : "negative";
+    // 🔥 HANDLE INVALID VALUES
+    const numericChange = parseFloat(change);
+    const changeClass =
+      !isNaN(numericChange) && numericChange >= 0
+        ? "positive"
+        : "negative";
 
     html += `
-      <tr class="${flashClass}">
+      <tr>
         <td>${prefix} ${month}</td>
-        <td>${item.price}</td>
-        <td class="${changeClass}">${item.change}</td>
+        <td>${price}</td>
+        <td class="${changeClass}">${change}</td>
       </tr>
     `;
   });
 
-  document.getElementById(id).innerHTML = html;
+  table.innerHTML = html;
 }
 
 /* INIT */
