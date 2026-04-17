@@ -2,122 +2,107 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Market Dashboard</title>
 
 <style>
+  body {
+    margin: 0;
+    font-family: Arial;
+    background: #adb3be;
+    color: rgb(255, 255, 255);
+  }
 
-body {
-  margin: 0;
-  font-family: Arial;
-  background: #0f172a;
-  color: white;
-}
+  header {
+    display: flex;
+    justify-content: space-between;
+    padding: 15px 25px;
+    background: #111827;
+    position: sticky;
+    top: 0;
+    border-bottom: 1px solid #1f2937;
+  }
 
-/* HEADER (SMALL + CLEAN) */
-header {
-  display: flex;
-  justify-content: space-between;
-  padding: 10px 15px;
-  background: #111827;
-  font-size: 14px;
-}
+  .container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    padding: 20px;
+  }
 
-/* GRID */
-.container {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 15px;
-  padding: 15px;
-}
+  .card {
+    background: #2c3851;
+    padding: 15px;
+    border-radius: 12px;
+    border: 1px solid #1f2937;
+  }
 
-@media(max-width:768px){
-  .container { grid-template-columns: 1fr; }
-}
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
 
-/* CARD */
-.card {
-  background: #1e293b;
-  padding: 12px;
-  border-radius: 10px;
-}
+  th, td {
+    padding: 10px;
+    text-align: center;
+    border-bottom: 1px solid #1f2937;
+  }
 
-/* TABLE */
-table {
-  width: 100%;
-  border-collapse: collapse;
-}
+  th {
+    color: #60a5fa;
+  }
 
-th, td {
-  padding: 8px;
-  text-align: center;
-}
+  .positive-flash {
+    animation: greenFlash 0.8s ease;
+  }
 
-th {
-  color: #38bdf8;
-}
+  .negative-flash {
+    animation: redFlash 0.8s ease;
+  }
 
-/* FLASH */
-.positive-flash { animation: greenFlash 0.8s; }
-.negative-flash { animation: redFlash 0.8s; }
+  @keyframes greenFlash {
+    0% { background: rgb(0, 255, 94); }
+    100% { background: transparent; }
+  }
 
-@keyframes greenFlash {
-  0% { background: rgba(0,255,100,0.4); }
-  100% { background: transparent; }
-}
+  @keyframes redFlash {
+    0% { background: rgb(255, 0, 0); }
+    100% { background: transparent; }
+  }
 
-@keyframes redFlash {
-  0% { background: rgba(255,0,0,0.4); }
-  100% { background: transparent; }
-}
+  .positive {
+    color: #00ff11;
+    font-weight: bold;
+  }
 
-.positive { color: #22c55e; font-weight: bold; }
-.negative { color: #ef4444; font-weight: bold; }
-
-/* USD BOX */
-.usd-box {
-  text-align: center;
-  padding: 10px;
-  background: #020617;
-  border-top: 1px solid #334155;
-}
-
+  .negative {
+    color: #ff0404;
+    font-weight: bold;
+  }
 </style>
 </head>
 
 <body>
 
 <header>
-  <div>📊 Market Dashboard</div>
-  <div id="clock"></div>
+  <h2>📊 Live Oil Market Dashboard</h2>
+  <div id="clock", style="color: #ffffff; font-weight: bold;"></div>
 </header>
 
 <div class="container">
-
   <div class="card">
-    <h3>KLC</h3>
+    <h3>KLC Market</h3>
     <table id="klcTable"></table>
   </div>
 
   <div class="card">
-    <h3>CBOT</h3>
+    <h3>CBOT Market</h3>
     <table id="cbotTable"></table>
   </div>
-
-  <div class="card">
-    <h3>CRUDE</h3>
-    <table id="crudeTable"></table>
-  </div>
-
-</div>
-
-<div class="usd-box">
-  USD → INR: <span id="usd"></span>
 </div>
 
 <script>
 
-const API = "http://localhost:3000/api/prices"; // 🔥 change to Render later
+const API = "http://localhost:3000/api/prices";
 
 /* CLOCK */
 function updateClock() {
@@ -128,44 +113,25 @@ function updateClock() {
 setInterval(updateClock, 1000);
 updateClock();
 
-/* PREVIOUS DATA */
+/* STORE PREVIOUS PRICES */
 let previousData = {
   KLC: {},
-  CBOT: {},
-  CRUDE: {}
+  CBOT: {}
 };
 
 /* LOAD DATA */
 async function loadData() {
-  try {
-    const res = await fetch(API);
-    const data = await res.json();
+  const res = await fetch(API);
+  const data = await res.json();
 
-    console.log("DATA:", data);
+  renderTable("klcTable", data.KLC, "KLC");
+  renderTable("cbotTable", data.CBOT, "SOYOIL");
 
-    renderTable("klcTable", data.KLC, "KLC");
-    renderTable("cbotTable", data.CBOT, "SOYOIL");
-    renderTable("crudeTable", data.CRUDE, "CRUDE");
-
-    document.getElementById("usd").innerText =
-      data.USDINR ? data.USDINR.toFixed(2) : "-";
-
-    previousData = data;
-
-  } catch (err) {
-    console.error("❌ API Error", err);
-  }
+  previousData = data;
 }
 
-/* TABLE RENDER */
+/* RENDER TABLE WITH FLASH */
 function renderTable(id, dataset, prefix) {
-  const table = document.getElementById(id);
-
-  if (!dataset || Object.keys(dataset).length === 0) {
-    table.innerHTML = "<tr><td colspan='3'>No Data</td></tr>";
-    return;
-  }
-
   let html = `
     <tr>
       <th>Month</th>
@@ -174,38 +140,33 @@ function renderTable(id, dataset, prefix) {
     </tr>
   `;
 
-  Object.entries(dataset).forEach(([month, item]) => {
+  Object.keys(dataset).forEach(month => {
+    const item = dataset[month];
 
-    const price = item?.price || "-";
-    const change = item?.change || "-";
+    const prev = previousData?.[id === "klcTable" ? "KLC" : "CBOT"]?.[month]?.price;
 
-    const prev = previousData?.[
-      id === "klcTable" ? "KLC" :
-      id === "cbotTable" ? "CBOT" : "CRUDE"
-    ]?.[month]?.price;
-
-    const current = parseFloat(price);
+    const current = parseFloat(item.price);
     const previous = parseFloat(prev);
 
-    let flash = "";
+    let flashClass = "";
 
-    if (!isNaN(previous) && !isNaN(current)) {
-      if (current > previous) flash = "positive-flash";
-      else if (current < previous) flash = "negative-flash";
+    if (!isNaN(previous)) {
+      if (current > previous) flashClass = "positive-flash";
+      else if (current < previous) flashClass = "negative-flash";
     }
 
-    const cls = parseFloat(change) >= 0 ? "positive" : "negative";
+    const changeClass = parseFloat(item.change) >= 0 ? "positive" : "negative";
 
     html += `
-      <tr class="${flash}">
+      <tr class="${flashClass}">
         <td>${prefix} ${month}</td>
-        <td>${price}</td>
-        <td class="${cls}">${change}</td>
+        <td>${item.price}</td>
+        <td class="${changeClass}">${item.change}</td>
       </tr>
     `;
   });
 
-  table.innerHTML = html;
+  document.getElementById(id).innerHTML = html;
 }
 
 /* INIT */
