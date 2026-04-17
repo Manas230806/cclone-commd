@@ -195,7 +195,7 @@ async function loadData() {
 }
 
 /* TABLE RENDER */
-function renderTable(id, dataset, prefix) {
+  function renderTable(id, dataset, prefix) {
   let html = `
     <tr>
       <th>Month</th>
@@ -204,31 +204,38 @@ function renderTable(id, dataset, prefix) {
     </tr>
   `;
 
-  Object.keys(dataset || {}).forEach(month => {
-    const item = dataset[month];
+  if (!dataset || Object.keys(dataset).length === 0) {
+    document.getElementById(id).innerHTML = "<tr><td colspan='3'>No Data</td></tr>";
+    return;
+  }
+
+  Object.entries(dataset).forEach(([month, item]) => {
+
+    const price = item?.price ?? "-";
+    const change = item?.change ?? "-";
 
     const prev = previousData?.[
       id === "klcTable" ? "KLC" :
       id === "cbotTable" ? "CBOT" : "CRUDE"
     ]?.[month]?.price;
 
-    const current = parseFloat(item.price);
+    const current = parseFloat(price);
     const previous = parseFloat(prev);
 
     let flashClass = "";
 
-    if (!isNaN(previous)) {
+    if (!isNaN(previous) && !isNaN(current)) {
       if (current > previous) flashClass = "positive-flash";
       else if (current < previous) flashClass = "negative-flash";
     }
 
-    const changeClass = parseFloat(item.change) >= 0 ? "positive" : "negative";
+    const changeClass = parseFloat(change) >= 0 ? "positive" : "negative";
 
     html += `
       <tr class="${flashClass}">
         <td>${prefix} ${month}</td>
-        <td>${item.price}</td>
-        <td class="${changeClass}">${item.change}</td>
+        <td>${price}</td>
+        <td class="${changeClass}">${change}</td>
       </tr>
     `;
   });
