@@ -179,7 +179,8 @@ async function loadData() {
   try {
     const res = await fetch(API);
     const data = await res.json();
-
+    console.log("FRONTEND DATA:", data);
+    
     renderTable("klcTable", data.KLC, "KLC");
     renderTable("cbotTable", data.CBOT, "SOYOIL");
     renderTable("crudeTable", data.CRUDE, "CRUDE");
