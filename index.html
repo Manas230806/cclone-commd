@@ -2,185 +2,107 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Market Dashboard</title>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
 <style>
+  body {
+    margin: 0;
+    font-family: Arial;
+    background: #adb3be;
+    color: rgb(255, 255, 255);
+  }
 
-/* 🌌 BACKGROUND */
-body {
-  margin: 0;
-  font-family: 'Segoe UI', sans-serif;
-  background: linear-gradient(135deg, #0f172a, #1e293b);
-  color: white;
-}
+  header {
+    display: flex;
+    justify-content: space-between;
+    padding: 15px 25px;
+    background: #111827;
+    position: sticky;
+    top: 0;
+    border-bottom: 1px solid #1f2937;
+  }
 
-/* 🔄 LOADER */
-#loader {
-  position: fixed;
-  width: 100%;
-  height: 100%;
-  background: #0f172a;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-}
+  .container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    padding: 20px;
+  }
 
-.loader-circle {
-  width: 60px;
-  height: 60px;
-  border: 6px solid #334155;
-  border-top: 6px solid #38bdf8;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
+  .card {
+    background: #2c3851;
+    padding: 15px;
+    border-radius: 12px;
+    border: 1px solid #1f2937;
+  }
 
-@keyframes spin {
-  100% { transform: rotate(360deg); }
-}
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
 
-/* HEADER (SMALL) */
-header {
-  display: flex;
-  justify-content: space-between;
-  padding: 8px 15px;
-  background: rgba(17, 24, 39, 0.9);
-  font-size: 14px;
-}
+  th, td {
+    padding: 10px;
+    text-align: center;
+    border-bottom: 1px solid #1f2937;
+  }
 
-/* NAV */
-.nav {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-  padding: 10px;
-}
+  th {
+    color: #60a5fa;
+  }
 
-.nav button {
-  padding: 6px 12px;
-  border: none;
-  background: #1f2937;
-  color: white;
-  border-radius: 6px;
-  cursor: pointer;
-}
+  .positive-flash {
+    animation: greenFlash 0.8s ease;
+  }
 
-.nav button.active {
-  background: #38bdf8;
-}
+  .negative-flash {
+    animation: redFlash 0.8s ease;
+  }
 
-/* CONTAINER */
-.container {
-  padding: 15px;
-}
+  @keyframes greenFlash {
+    0% { background: rgb(0, 255, 94); }
+    100% { background: transparent; }
+  }
 
-/* CARD */
-.card {
-  background: rgba(255,255,255,0.05);
-  border-radius: 12px;
-  padding: 12px;
-  margin-bottom: 15px;
-}
+  @keyframes redFlash {
+    0% { background: rgb(255, 0, 0); }
+    100% { background: transparent; }
+  }
 
-/* TABLE */
-table {
-  width: 100%;
-  border-collapse: collapse;
-}
+  .positive {
+    color: #00ff11;
+    font-weight: bold;
+  }
 
-th, td {
-  padding: 8px;
-  text-align: center;
-}
-
-th {
-  color: #38bdf8;
-}
-
-/* FLASH */
-.positive-flash { animation: greenFlash 1s; }
-.negative-flash { animation: redFlash 1s; }
-
-@keyframes greenFlash {
-  0% { background: rgba(0,255,100,0.4); }
-  100% { background: transparent; }
-}
-
-@keyframes redFlash {
-  0% { background: rgba(255,0,0,0.4); }
-  100% { background: transparent; }
-}
-
-.positive { color: #22c55e; font-weight: bold; }
-.negative { color: #ef4444; font-weight: bold; }
-
-/* HIDE SECTIONS */
-.section { display: none; }
-.section.active { display: block; }
-
+  .negative {
+    color: #ff0404;
+    font-weight: bold;
+  }
 </style>
 </head>
 
 <body>
 
-<div id="loader"><div class="loader-circle"></div></div>
-
 <header>
-  <div>📊 Oil Market</div>
-  <div id="clock"></div>
+  <h2>📊 Live Oil Market Dashboard</h2>
+  <div id="clock" style="color: #ffffff; font-weight: bold;"></div>
 </header>
 
-<!-- NAVIGATION -->
-<div class="nav">
-  <button onclick="showSection('market')" class="active">Market</button>
-  <button onclick="showSection('chart')">Charts</button>
-  <button onclick="showSection('alerts')">Alerts</button>
-</div>
-
 <div class="container">
-
-  <!-- MARKET -->
-  <div id="market" class="section active">
-    <div class="card">
-      <h3>KLC</h3>
-      <table id="klcTable"></table>
-    </div>
-
-    <div class="card">
-      <h3>CBOT</h3>
-      <table id="cbotTable"></table>
-    </div>
-
-    <div class="card">
-      <h3>CRUDE</h3>
-      <table id="crudeTable"></table>
-    </div>
+  <div class="card">
+    <h3>KLC Market</h3>
+    <table id="klcTable"></table>
   </div>
 
-  <!-- CHART -->
-  <div id="chart" class="section">
-    <div class="card">
-      <h3>Live Chart (Sample)</h3>
-      <canvas id="chartCanvas"></canvas>
-    </div>
+  <div class="card">
+    <h3>CBOT Market</h3>
+    <table id="cbotTable"></table>
   </div>
 
-  <!-- ALERTS -->
-  <div id="alerts" class="section">
-    <div class="card">
-      <h3>Set Alert</h3>
-      <input id="symbol" placeholder="KLC / CBOT / CRUDE">
-      <input id="price" placeholder="Price">
-      <button onclick="addAlert()">Add</button>
-    </div>
-
-    <div class="card">
-      <h3>Active Alerts</h3>
-      <ul id="alertList"></ul>
-    </div>
+  <!-- ✅ NEW CRUDE TABLE -->
+  <div class="card">
+    <h3>CRUDE Market</h3>
+    <table id="crudeTable"></table>
   </div>
 
 </div>
@@ -189,125 +111,75 @@ th {
 
 const API = "https://cclone-commd.onrender.com/api/prices";
 
-/* DATE + TIME */
+/* CLOCK */
 function updateClock() {
   const now = new Date();
   document.getElementById("clock").innerText =
     now.toLocaleDateString() + " " + now.toLocaleTimeString();
 }
 setInterval(updateClock, 1000);
+updateClock();
 
-/* NAVIGATION */
-function showSection(id) {
-  document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
-  document.getElementById(id).classList.add("active");
-
-  document.querySelectorAll(".nav button").forEach(b => b.classList.remove("active"));
-  event.target.classList.add("active");
-}
-
-/* PREVIOUS DATA */
-let previousData = { KLC:{}, CBOT:{}, CRUDE:{} };
+/* STORE PREVIOUS PRICES */
+let previousData = {
+  KLC: {},
+  CBOT: {},
+  CRUDE: {}   // ✅ ADDED
+};
 
 /* LOAD DATA */
 async function loadData() {
-  try {
-    const res = await fetch(API);
-    const data = await res.json();
+  const res = await fetch(API);
+  const data = await res.json();
 
-    renderTable("klcTable", data.KLC, "KLC");
-    renderTable("cbotTable", data.CBOT, "SOYOIL");
-    renderTable("crudeTable", data.CRUDE, "CRUDE");
+  renderTable("klcTable", data.KLC, "KLC");
+  renderTable("cbotTable", data.CBOT, "SOYOIL");
+  renderTable("crudeTable", data.CRUDE, "CRUDE"); // ✅ ADDED
 
-    previousData = data;
-
-    document.getElementById("loader").style.display = "none";
-
-    updateChart(data);
-
-    checkAlerts(data);
-
-  } catch (e) {
-    document.getElementById("loader").style.display = "none";
-  }
+  previousData = data;
 }
 
-/* TABLE */
+/* RENDER TABLE WITH FLASH */
 function renderTable(id, dataset, prefix) {
-  let html = `<tr><th>Month</th><th>Price</th><th>Change</th></tr>`;
+  let html = `
+    <tr>
+      <th>Month</th>
+      <th>Price</th>
+      <th>Change</th>
+    </tr>
+  `;
 
-  Object.entries(dataset || {}).forEach(([month, item]) => {
-    const price = item?.price ?? "-";
-    const change = item?.change ?? "-";
+  Object.keys(dataset || {}).forEach(month => {
+    const item = dataset[month];
 
     const prev = previousData?.[
       id === "klcTable" ? "KLC" :
-      id === "cbotTable" ? "CBOT" : "CRUDE"
+      id === "cbotTable" ? "CBOT" :
+      "CRUDE"
     ]?.[month]?.price;
 
-    const current = parseFloat(price);
+    const current = parseFloat(item.price);
     const previous = parseFloat(prev);
 
-    let flash = "";
-    if (!isNaN(previous) && !isNaN(current)) {
-      if (current > previous) flash = "positive-flash";
-      else if (current < previous) flash = "negative-flash";
+    let flashClass = "";
+
+    if (!isNaN(previous)) {
+      if (current > previous) flashClass = "positive-flash";
+      else if (current < previous) flashClass = "negative-flash";
     }
 
-    const cls = parseFloat(change) >= 0 ? "positive" : "negative";
+    const changeClass = parseFloat(item.change) >= 0 ? "positive" : "negative";
 
-    html += `<tr class="${flash}">
-      <td>${prefix} ${month}</td>
-      <td>${price}</td>
-      <td class="${cls}">${change}</td>
-    </tr>`;
+    html += `
+      <tr class="${flashClass}">
+        <td>${prefix} ${month}</td>
+        <td>${item.price}</td>
+        <td class="${changeClass}">${item.change}</td>
+      </tr>
+    `;
   });
 
   document.getElementById(id).innerHTML = html;
-}
-
-/* CHART */
-let chart;
-function updateChart(data) {
-  const prices = Object.values(data.KLC || {}).map(x => parseFloat(x.price) || 0);
-
-  if (!chart) {
-    chart = new Chart(document.getElementById("chartCanvas"), {
-      type: "line",
-      data: {
-        labels: Object.keys(data.KLC || {}),
-        datasets: [{ label: "KLC", data: prices }]
-      }
-    });
-  } else {
-    chart.data.labels = Object.keys(data.KLC || {});
-    chart.data.datasets[0].data = prices;
-    chart.update();
-  }
-}
-
-/* ALERT SYSTEM */
-let alerts = [];
-
-function addAlert() {
-  const symbol = document.getElementById("symbol").value.toUpperCase();
-  const price = parseFloat(document.getElementById("price").value);
-
-  alerts.push({ symbol, price });
-
-  document.getElementById("alertList").innerHTML += `<li>${symbol} > ${price}</li>`;
-}
-
-function checkAlerts(data) {
-  alerts.forEach(a => {
-    const market = data[a.symbol];
-    if (!market) return;
-
-    const first = Object.values(market)[0];
-    if (first && parseFloat(first.price) >= a.price) {
-      alert(`🔔 ${a.symbol} crossed ${a.price}`);
-    }
-  });
 }
 
 /* INIT */
