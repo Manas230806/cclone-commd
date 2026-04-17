@@ -2,114 +2,122 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Market Dashboard</title>
 
 <style>
-  body {
-    margin: 0;
-    font-family: Arial;
-    background: #adb3be;
-    color: rgb(255, 255, 255);
-  }
 
-  header {
-    display: flex;
-    justify-content: space-between;
-    padding: 15px 25px;
-    background: #111827;
-    position: sticky;
-    top: 0;
-    border-bottom: 1px solid #1f2937;
-  }
+body {
+  margin: 0;
+  font-family: Arial;
+  background: #0f172a;
+  color: white;
+}
 
-  .container {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-    padding: 20px;
-  }
+/* HEADER (SMALL + CLEAN) */
+header {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 15px;
+  background: #111827;
+  font-size: 14px;
+}
 
-  .card {
-    background: #2c3851;
-    padding: 15px;
-    border-radius: 12px;
-    border: 1px solid #1f2937;
-  }
+/* GRID */
+.container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+  padding: 15px;
+}
 
-  table {
-    width: 100%;
-    border-collapse: collapse;
-  }
+@media(max-width:768px){
+  .container { grid-template-columns: 1fr; }
+}
 
-  th, td {
-    padding: 10px;
-    text-align: center;
-    border-bottom: 1px solid #1f2937;
-  }
+/* CARD */
+.card {
+  background: #1e293b;
+  padding: 12px;
+  border-radius: 10px;
+}
 
-  th {
-    color: #60a5fa;
-  }
+/* TABLE */
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
 
-  .positive-flash {
-    animation: greenFlash 0.8s ease;
-  }
+th, td {
+  padding: 8px;
+  text-align: center;
+}
 
-  .negative-flash {
-    animation: redFlash 0.8s ease;
-  }
+th {
+  color: #38bdf8;
+}
 
-  @keyframes greenFlash {
-    0% { background: rgb(0, 255, 94); }
-    100% { background: transparent; }
-  }
+/* FLASH */
+.positive-flash { animation: greenFlash 0.8s; }
+.negative-flash { animation: redFlash 0.8s; }
 
-  @keyframes redFlash {
-    0% { background: rgb(255, 0, 0); }
-    100% { background: transparent; }
-  }
+@keyframes greenFlash {
+  0% { background: rgba(0,255,100,0.4); }
+  100% { background: transparent; }
+}
 
-  .positive {
-    color: #00ff11;
-    font-weight: bold;
-  }
+@keyframes redFlash {
+  0% { background: rgba(255,0,0,0.4); }
+  100% { background: transparent; }
+}
 
-  .negative {
-    color: #ff0404;
-    font-weight: bold;
-  }
+.positive { color: #22c55e; font-weight: bold; }
+.negative { color: #ef4444; font-weight: bold; }
+
+/* USD BOX */
+.usd-box {
+  text-align: center;
+  padding: 10px;
+  background: #020617;
+  border-top: 1px solid #334155;
+}
+
 </style>
 </head>
 
 <body>
 
 <header>
-  <h2>📊 Live Oil Market Dashboard</h2>
-  <div id="clock" style="color: #ffffff; font-weight: bold;"></div>
+  <div>📊 Market Dashboard</div>
+  <div id="clock"></div>
 </header>
 
 <div class="container">
+
   <div class="card">
-    <h3>KLC Market</h3>
+    <h3>KLC</h3>
     <table id="klcTable"></table>
   </div>
 
   <div class="card">
-    <h3>CBOT Market</h3>
+    <h3>CBOT</h3>
     <table id="cbotTable"></table>
   </div>
 
-  <!-- ✅ NEW CRUDE TABLE -->
   <div class="card">
-    <h3>CRUDE Market</h3>
+    <h3>CRUDE</h3>
     <table id="crudeTable"></table>
   </div>
 
 </div>
 
+<div class="usd-box">
+  USD → INR: <span id="usd"></span>
+</div>
+
 <script>
 
-const API = "https://cclone-commd.onrender.com/api/prices";
+const API = "http://localhost:3000/api/prices"; // 🔥 change to Render later
 
 /* CLOCK */
 function updateClock() {
@@ -120,51 +128,41 @@ function updateClock() {
 setInterval(updateClock, 1000);
 updateClock();
 
-/* STORE PREVIOUS PRICES */
+/* PREVIOUS DATA */
 let previousData = {
   KLC: {},
   CBOT: {},
-  CRUDE: {}   // ✅ ADDED
+  CRUDE: {}
 };
 
 /* LOAD DATA */
 async function loadData() {
   try {
     const res = await fetch(API);
-
-    if (!res.ok) {
-      throw new Error("API not responding");
-    }
-
     const data = await res.json();
 
-    console.log("LIVE DATA:", data);
+    console.log("DATA:", data);
 
     renderTable("klcTable", data.KLC, "KLC");
     renderTable("cbotTable", data.CBOT, "SOYOIL");
     renderTable("crudeTable", data.CRUDE, "CRUDE");
 
+    document.getElementById("usd").innerText =
+      data.USDINR ? data.USDINR.toFixed(2) : "-";
+
     previousData = data;
 
   } catch (err) {
-    console.error(err);
-
-    document.getElementById("klcTable").innerHTML =
-      "<tr><td colspan='3'>❌ API Error</td></tr>";
+    console.error("❌ API Error", err);
   }
 }
 
-/* RENDER TABLE WITH FLASH */
+/* TABLE RENDER */
 function renderTable(id, dataset, prefix) {
   const table = document.getElementById(id);
 
-  // 🔥 SHOW MESSAGE IF NO DATA
   if (!dataset || Object.keys(dataset).length === 0) {
-    table.innerHTML = `
-      <tr>
-        <td colspan="3">⚠️ No Data Coming From Server</td>
-      </tr>
-    `;
+    table.innerHTML = "<tr><td colspan='3'>No Data</td></tr>";
     return;
   }
 
@@ -181,18 +179,28 @@ function renderTable(id, dataset, prefix) {
     const price = item?.price || "-";
     const change = item?.change || "-";
 
-    // 🔥 HANDLE INVALID VALUES
-    const numericChange = parseFloat(change);
-    const changeClass =
-      !isNaN(numericChange) && numericChange >= 0
-        ? "positive"
-        : "negative";
+    const prev = previousData?.[
+      id === "klcTable" ? "KLC" :
+      id === "cbotTable" ? "CBOT" : "CRUDE"
+    ]?.[month]?.price;
+
+    const current = parseFloat(price);
+    const previous = parseFloat(prev);
+
+    let flash = "";
+
+    if (!isNaN(previous) && !isNaN(current)) {
+      if (current > previous) flash = "positive-flash";
+      else if (current < previous) flash = "negative-flash";
+    }
+
+    const cls = parseFloat(change) >= 0 ? "positive" : "negative";
 
     html += `
-      <tr>
+      <tr class="${flash}">
         <td>${prefix} ${month}</td>
         <td>${price}</td>
-        <td class="${changeClass}">${change}</td>
+        <td class="${cls}">${change}</td>
       </tr>
     `;
   });
